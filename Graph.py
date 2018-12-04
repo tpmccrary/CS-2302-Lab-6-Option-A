@@ -9,76 +9,169 @@
 # **********************************************************************************************************************
 
 import DisjointSetForest
-import Graph
-import TopologicalSort
-import KruskalsAlgorithm
 
 
-def main():
+class GraphALNode:
     """
-    Main function/Runner function.
-    :return:
+    Graph node class, based of professors implementation.
     """
-    # ======================
-    # TOPOLOGICAL SORT TESTS
-    # ======================
-    print('__________Test 1 - Acyclic graph__________')
-    graph = Graph.GraphAL(9, True)
+    def __init__(self, item, weight, next):
+        self.item = item
+        self.weight = weight
+        self.next = next
 
-    graph.add_edge(0, 1)
-    graph.add_edge(2, 1)
-    graph.add_edge(3, 2)
-    graph.add_edge(3, 6)
-    graph.add_edge(4, 0)
-    graph.add_edge(4, 1)
-    graph.add_edge(5, 1)
-    graph.add_edge(5, 2)
-    graph.add_edge(5, 4)
-    graph.add_edge(5, 7)
-    graph.add_edge(6, 2)
-    graph.add_edge(6, 5)
-    graph.add_edge(6, 8)
-    graph.add_edge(7, 4)
-    graph.add_edge(8, 5)
-    graph.add_edge(8, 7)
 
-    print('Topological sort for this graph:', TopologicalSort.topological_sort(graph))
+class GraphAL:
+    """
+    Graph class that uses an adjacency list, based off of professors implementation.
+    """
+    def __init__(self, initial_num_vertices, is_directed):
+        self.adj_list = [None] * initial_num_vertices
+        self.is_directed = is_directed
 
-    # ========================
-    # KRUSKALS ALGORITHM TESTS
-    #=========================
+    def is_valid_vertex(self, u):
+        return 0 <= u < len(self.adj_list)
 
-    print('Test 1 - Kruskals Algorithm')
+    def add_vertex(self):
+        self.adj_list.append(None)
 
-    graph = Graph.GraphAL(8, False)
+        return len(self.adj_list) - 1  # Return new vertex id
 
-    graph.add_edge(0, 1, 2)
-    graph.add_edge(0, 4, 3)
-    graph.add_edge(1, 2, 9)
-    graph.add_edge(1, 4, 6)
-    graph.add_edge(1, 5, 8)
-    graph.add_edge(2, 3, 10)
-    graph.add_edge(2, 5, 7)
-    graph.add_edge(2, 6, 15)
-    graph.add_edge(3, 6, 16)
-    graph.add_edge(4, 5, 1)
-    graph.add_edge(4, 7, 4)
-    graph.add_edge(5, 6, 12)
-    graph.add_edge(5, 7, 11)
-    graph.add_edge(6, 7, 13)
+    def add_edge(self, src, dest, weight = 1.0):
+        if not self.is_valid_vertex(src) or not self.is_valid_vertex(dest):
+            return
 
-    for i in range(len(graph.adj_list)):
-        temp = graph.adj_list[i]
-        print('Vertex:', i)
+        #  TODO: What if src already points to dest?
+        self.adj_list[src] = GraphALNode(dest, weight, self.adj_list[src])
+
+        if not self.is_directed:
+            self.adj_list[dest] = GraphALNode(src, weight, self.adj_list[dest])
+
+    def remove_edge(self, src, dest):
+        self.__remove_directed_edge(src, dest)
+
+        if not self.is_directed:
+            self.__remove_directed_edge(dest, src)
+
+    def __remove_directed_edge(self, src, dest):
+        if not self.is_valid_vertex(src) or not self.is_valid_vertex(dest):
+            return
+
+        if self.adj_list[src] is None:
+            return
+
+        if self.adj_list[src].item == dest:
+            self.adj_list[src] = self.adj_list[src].next
+        else:
+            prev = self.adj_list[src]
+            cur = self.adj_list[src].next
+
+            while cur is not None:
+                if cur.item == dest:
+                    prev.next = cur.next
+                    return
+
+                prev = prev.next
+                cur = cur.next
+
+        return len(self.adj_list)
+
+    def get_num_vertices(self):
+        return len(self.adj_list)
+
+    def get_vertices_reachable_from(self, src):
+        reachable_vertices = set()
+
+        temp = self.adj_list[src]
+
         while temp is not None:
-            print(temp.item)
+            reachable_vertices.add(temp.item)
             temp = temp.next
 
-    print('Kruskals Algorithm for this graph:', KruskalsAlgorithm.kruskals_algorithm(graph))
+        return reachable_vertices
 
+    def get_vertices_that_point_to(self, dest):
+        vertices = set()
 
+        for i in range(len(self.adj_list)):
+            temp = self.adj_list[i]
 
+            while temp is not None:
+                if temp.item == dest:
+                    vertices.add(i)
+                    break
 
+                temp = temp.next
 
-if __name__ == '__main__':
-    main()
+        return vertices
+
+    def get_vertex_in_degree(self, vertex):
+        """
+        Solution to Problem 6: Returns in degree of a vertex.
+        :param vertex:
+        :return in_degree_count:
+        """
+
+        if not self.is_valid_vertex(vertex):
+            return
+
+        in_degree_count = 0
+
+        for i in range(len(self.adj_list)):
+            temp = self.adj_list[i]
+            while temp is not None:
+                if temp.item == vertex:
+                    in_degree_count = in_degree_count + 1
+                temp = temp.next
+
+        return in_degree_count
+
+    def is_there_a_two_vertex_cycle(self):
+        """
+        Solution to Problem 7: Returns True if cycle of size 2 is found.
+        :return True, False:
+        """
+        count = 0
+        for i in range(len(self.adj_list)):
+            temp = self.adj_list[i]
+            while temp is not None:
+                count = temp.item
+                temp2 = self.adj_list[count]
+                while temp2 is not None:
+                    if temp2.item == i:
+                        return True
+                    temp2 = temp2.next
+                temp = temp.next
+        return False
+
+    def get_num_connected_components(self):
+        """
+        Solution to Problem 8: Returns number
+        :return:
+        """
+        dsf = DisjointSetForest.DisjointSetForest(len(self.adj_list))
+
+        for i in range(len(self.adj_list)):
+            temp = self.adj_list[i]
+
+            while temp is not None:
+                dsf.union(i, temp.item)
+
+                temp = temp.next
+
+        return dsf.get_num_of_sets()
+
+    def get_adj_vertices_list(self, vertex):
+        """
+        Returns a list of adjacent vertices from one vertex.
+        :param vertex:
+        :return adjacent list:
+        """
+        adjacent_list = []
+
+        temp = self.adj_list[vertex]
+        while temp is not None:
+            adjacent_list.append(temp.item)
+            temp = temp.next
+
+        return adjacent_list
